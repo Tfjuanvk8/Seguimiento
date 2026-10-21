@@ -5,8 +5,7 @@ Juan José Rios,
 Santiago Londoño
 # SaborExpress — Explicación del proyecto
 
-# 1. ¿Qué hace el proyecto?
-
+## 1. ¿Qué hace el proyecto?
 SaborExpress es una aplicación desarrollada en Java para gestionar los pedidos de un restaurante. El proyecto está dividido en tres partes para que cada integrante del equipo pueda trabajar en una rama diferente:
 
 * **menu:** productos, menú y descuentos.
