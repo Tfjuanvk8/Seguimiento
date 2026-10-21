@@ -3,136 +3,187 @@ Seguimiento 19 de octubre:
 Juan Andrés Alzate,
 Juan José Rios,
 Santiago Londoño
-# SaborExpress — explicación del diseño y las clases
+# SaborExpress — Explicación del proyecto
 
 ## 1. ¿Qué hace el proyecto?
 
-SaborExpress es una aplicación base para gestionar pedidos de un restaurante. Está dividida en tres áreas de trabajo para que el equipo pueda desarrollar en paralelo:
+SaborExpress es una aplicación desarrollada en Java para gestionar los pedidos de un restaurante. El proyecto está dividido en tres partes para que cada integrante del equipo pueda trabajar en una rama diferente:
 
-- **`menu`**: productos, menú y descuentos.
-- **`cliente`**: clientes y repartidores.
-- **`pedido`**: pedidos, sus estados, notificaciones y estadísticas.
+* **menu:** productos, menú y descuentos.
+* **cliente:** clientes y repartidores.
+* **pedido:** pedidos, estados, notificaciones y estadísticas.
 
-El objetivo de esta organización es separar responsabilidades: cada clase tiene una tarea clara y los cambios en una parte del sistema afectan lo menos posible a las demás.
+Esta división permite organizar mejor el código y que cada clase tenga una responsabilidad específica.
 
-## 2. ¿Por qué `Producto` es una clase abstracta?
+## 2. ¿Por qué Producto es una clase abstracta?
 
-`Producto` representa las características que todos los productos comparten: nombre y precio. Es `abstract` porque no queremos crear un producto genérico sin especificar qué clase de producto es. En cambio, se crean objetos concretos como `Plato`, `Bebida` o `Combo`.
+`Producto` es una clase abstracta porque contiene los atributos que comparten todos los productos, como el nombre y el precio, pero no necesitamos crear objetos de tipo Producto directamente, es la base de donde parte cada producto.
 
-Las clases `Plato`, `Bebida` y `Combo` **heredan** de `Producto` para reutilizar sus atributos, validaciones y método `toString()`, y luego agregan sus propios datos:
+En su lugar, creamos objetos de las clases que heredan de ella y la implementan:
 
-- `Plato`: añade la categoría del plato.
-- `Bebida`: añade el tamaño en mililitros y valida que sea positivo.
-- `Combo`: contiene una lista de productos y guarda una copia inmutable de esa lista.
+* **Plato:** tiene una categoría.
+* **Bebida:** tiene un tamaño en mililitros.
+* **Combo:** contiene una lista de productos.
 
-Esto aplica **herencia** y evita repetir nombre y precio en cada clase. Aunque `Producto` es abstracta, sus subclases pueden usar su constructor mediante `super(nombre, precio)`.
+Estas clases utilizan `super(nombre, precio)` para llamar al constructor de Producto y reutilizar sus atributos y validaciones.
 
-## 3. Archivos de la rama `menu`
+Esto nos permite aplicar herencia y evitar repetir código.
 
-| Archivo | ¿Por qué existe? |
-|---|---|
-| `modelo/Producto.java` | Clase abstracta con los datos comunes de todo producto. Valida que el nombre exista y que el precio no sea negativo. |
-| `modelo/Plato.java` | Especializa `Producto` con la categoría del plato. |
-| `modelo/Bebida.java` | Especializa `Producto` con los mililitros. Valida que el tamaño sea mayor que cero. |
-| `modelo/Combo.java` | Representa una combinación de productos. Usa `List<Producto>` para aceptar distintos tipos de producto. |
-| `menu/Menu.java` | Centraliza las operaciones del menú: agregar, eliminar, listar y ordenar por precio. Usa `ArrayList` porque el menú es una colección que se recorre y puede cambiar de tamaño. |
-| `promocion/EstrategiaDescuento.java` | Es una **interfaz** que define el contrato `aplicar(precio)`. No especifica cómo se calcula cada descuento; solo exige que cada estrategia implemente ese método. |
-| `promocion/DescuentoPorcentaje.java` | Implementa la interfaz y calcula el precio después de aplicar un porcentaje de descuento. Valida que esté entre 0 y 100. |
-| `promocion/DescuentoFijo.java` | Implementa la misma interfaz, pero resta una cantidad fija. Usa `Math.max(0, ...)` para evitar que el precio final sea negativo. |
+## 3. Archivos de la rama menu
 
-### ¿Por qué una interfaz para los descuentos?
+* **Producto.java:** clase abstracta que contiene el nombre y el precio de los productos. Valida que el nombre no esté vacío y que el precio no sea negativo.
 
-Porque las promociones pueden calcularse de maneras diferentes, pero todas ofrecen la misma operación. Gracias a `EstrategiaDescuento`, el código que utiliza un descuento puede trabajar con la interfaz sin depender de una clase concreta. Este es el patrón **Strategy (Estrategia)**. Para añadir una nueva regla de descuento se puede crear otra implementación, sin tener que cambiar las existentes.
+* **Plato.java:** hereda de Producto y agrega la categoría del plato.
 
-## 4. Archivos de la rama `cliente`
+* **Bebida.java:** hereda de Producto y agrega los mililitros de la bebida. También valida que el tamaño sea mayor que cero.
 
-| Archivo | ¿Por qué existe? |
-|---|---|
-| `cliente/Cliente.java` | Modelo de datos del cliente: id, nombre, teléfono y dirección. Los campos `final` hacen que esos datos no se puedan reasignar después de construir el objeto. |
-| `cliente/Repartidor.java` | Modelo del repartidor. Conserva id y nombre, y permite actualizar si está disponible. |
-| `cliente/GestorClientes.java` | Encapsula la lista de clientes y sus operaciones básicas. `buscarPorId` devuelve `Optional<Cliente>` para representar que quizá no haya coincidencia, en vez de devolver `null`. |
-| `cliente/GestorRepartidores.java` | Administra repartidores y permite encontrar el primero que esté disponible. También usa `Optional` si no hay ninguno disponible. |
+* **Combo.java:** representa un conjunto de productos. Utiliza `List<Producto>` para poder almacenar diferentes tipos de productos y guarda una copia que no se puede modificar directamente.
 
-### ¿Por qué usar `List` y `Optional`?
+* **Menu.java:** administra los productos del restaurante. Permite agregarlos, eliminarlos, listarlos y ordenarlos por precio. Utiliza `ArrayList` porque necesitamos almacenar una cantidad variable de productos.
 
-- `List` permite guardar varios objetos del mismo tipo y recorrerlos.
-- `ArrayList` es una implementación sencilla y flexible de `List`.
-- `List.copyOf(...)` devuelve una copia no modificable de la lista. Así, quien llama a `listar()` no puede agregar o borrar elementos directamente dentro del gestor.
-- `Optional` comunica que una búsqueda puede no encontrar un resultado y anima al código que llama a manejar ese caso.
+* **EstrategiaDescuento.java:** interfaz que define el método `aplicar(precio)`, que deben implementar los diferentes descuentos.
 
-**Nota de mejora:** los gestores actuales usan listas y buscan recorriendo sus elementos. Es sencillo para una primera versión, pero la búsqueda por id no es de tiempo constante. Si el requisito exige búsquedas promedio O(1), conviene almacenar los objetos en un `HashMap` indexado por id. También se debe añadir una validación para evitar documentos duplicados de clientes si el requisito del trabajo lo exige.
+* **DescuentoPorcentaje.java:** implementa EstrategiaDescuento y calcula el precio después de aplicar un porcentaje. Valida que esté entre 0 y 100.
 
-## 5. Archivos de la rama `pedido`
+* **DescuentoFijo.java:** también implementa EstrategiaDescuento, pero resta una cantidad fija. Utiliza `Math.max(0, ...)` para evitar que el precio final sea negativo.
 
-| Archivo | ¿Por qué existe? |
-|---|---|
-| `pedido/Pedido.java` | Representa una compra: identifica el pedido, asocia un cliente, conserva sus detalles, estado, repartidor y observadores. Calcula el total a partir de sus detalles. |
-| `pedido/DetallePedido.java` | Representa una línea del pedido: producto y cantidad. Calcula el subtotal multiplicando precio por cantidad. Separar el detalle permite que un pedido tenga muchos productos y cantidades diferentes. |
-| `pedido/EstadoPedido.java` | Es un `enum`, es decir, un conjunto cerrado de estados permitidos: creado, en preparación, listo, en camino, entregado o cancelado. Evita escribir estados arbitrarios como texto. |
-| `pedido/GestorPedidos.java` | Encapsula la colección de pedidos y permite agregar, listar, buscar por id y ordenar por total. |
-| `servicio/EstadisticasPedidos.java` | Contiene consultas agregadas sobre pedidos, como sumar ventas y contar los pedidos entregados. Usa Streams para expresar operaciones sobre colecciones. |
-| `observador/ObservadorPedido.java` | Interfaz que define el método de notificación que deben implementar los observadores de un pedido. |
-| `observador/ObservadorCliente.java` | Implementa el observador y simula un aviso al cliente cuando cambia el estado. |
-| `observador/ObservadorCocina.java` | Implementa el observador y simula un aviso a cocina. |
-| `observador/ObservadorRepartidor.java` | Implementa el observador y simula un aviso al repartidor. |
-| `Main.java` | Punto de entrada del programa. Crea objetos de ejemplo, registra productos en un pedido, muestra el total y cambia el estado para demostrar las notificaciones. |
+### ¿Por qué usamos una interfaz para los descuentos?
 
-### ¿Por qué `EstadoPedido` es un `enum`?
+Porque existen diferentes formas de calcular un descuento, pero todas realizan la misma operación.
 
-Los estados son valores conocidos y limitados. Un `enum` evita errores de escritura y deja claro cuáles son los estados válidos del pedido.
+Con la interfaz `EstrategiaDescuento` podemos crear distintos tipos de descuentos sin tener que modificar las clases existentes.
 
-### ¿Por qué `ObservadorPedido` es una interfaz?
+Esto corresponde al patrón de diseño **Strategy**, donde podemos cambiar la forma de realizar una operación utilizando diferentes implementaciones.
 
-El pedido no necesita conocer las clases concretas que reciben las notificaciones. Solo necesita llamar al método declarado en `ObservadorPedido`. Por eso se pueden agregar observadores nuevos —por ejemplo, una pantalla de seguimiento— sin cambiar la lista de tipos que `Pedido` conoce. Este diseño aplica el patrón **Observer (Observador)**.
+## 4. Archivos de la rama cliente
 
-### ¿Por qué separar `Pedido` de `DetallePedido`?
+* **Cliente.java:** contiene los datos del cliente, como ID, nombre, teléfono y dirección. Los atributos son `final` para evitar que se reasignen después de crear el objeto.
 
-Un pedido puede tener varios productos, y cada uno puede tener una cantidad distinta. `DetallePedido` guarda esa relación y calcula su subtotal. `Pedido` reúne los detalles y suma sus subtotales para obtener el total. Así cada clase tiene una responsabilidad más específica.
+* **Repartidor.java:** contiene el ID, nombre y disponibilidad del repartidor. La disponibilidad puede actualizarse dependiendo de si está ocupado o libre.
 
-### ¿Por qué usar Streams en estadísticas y ordenamiento?
+* **GestorClientes.java:** administra la lista de clientes y permite buscarlos por ID. Utiliza `Optional<Cliente>` porque puede ocurrir que el cliente buscado no exista.
 
-Las operaciones `stream()`, `filter()`, `mapToDouble()`, `sum()` y `sorted()` permiten filtrar, transformar, sumar u ordenar elementos sin escribir manualmente todos los bucles. Esto es un ejemplo de **programación funcional** en Java.
+* **GestorRepartidores.java:** administra los repartidores y permite buscar el primero que esté disponible. También utiliza `Optional` cuando no encuentra ninguno.
 
-## 6. Conceptos de programación orientada a objetos usados
+### ¿Por qué utilizamos List y Optional?
 
-- **Encapsulamiento:** los atributos se mantienen `private` y se accede a ellos mediante métodos públicos.
-- **Herencia:** `Plato`, `Bebida` y `Combo` heredan de `Producto`.
-- **Abstracción:** `Producto` representa lo común entre tipos concretos de productos.
-- **Polimorfismo:** los diferentes productos pueden manejarse a través del tipo común `Producto`; las diferentes estrategias de descuento pueden manejarse mediante `EstrategiaDescuento`.
-- **Interfaces:** `EstrategiaDescuento` y `ObservadorPedido` definen contratos para distintas implementaciones.
-- **Colecciones:** `ArrayList` y `List` permiten administrar grupos de productos, clientes, repartidores, pedidos y detalles.
-- **`Optional`:** representa resultados de búsqueda que pueden estar ausentes.
-- **`enum`:** define los estados válidos del pedido.
-- **Streams y `Comparator`:** permiten ordenar, filtrar y resumir información.
-- **Separación de responsabilidades:** cada clase se ocupa de un aspecto concreto del sistema.
+* `List` permite almacenar varios objetos y recorrerlos.
+* `ArrayList` permite agregar o eliminar elementos fácilmente.
+* `List.copyOf()` devuelve una copia de la lista que no se puede modificar directamente.
+* `Optional` permite manejar búsquedas en las que puede no encontrarse un resultado, evitando depender de `null`.
 
-## 7. Cómo abrirlo en IntelliJ IDEA
+Actualmente los gestores buscan los elementos recorriendo las listas. Esto funciona para esta primera versión, pero si necesitamos búsquedas promedio O(1), podemos utilizar un `HashMap` con el ID como clave.
 
-1. Descomprime el archivo ZIP.
-2. Abre la carpeta `SaborExpress` en IntelliJ IDEA.
-3. Configura un JDK compatible (se recomienda JDK 17 o superior).
-4. Marca las carpetas que contienen el código como **Sources Root** según la estructura de paquetes.
-5. Revisa que IntelliJ pueda resolver los imports entre `cliente`, `modelo`, `menu`, `pedido`, `observador`, `promocion` y `servicio`.
-6. Ejecuta `Main.java`.
+## 5. Archivos de la rama pedido
 
-Como los archivos están agrupados por las tres ramas, para compilar el programa integrado las tres partes deben estar presentes en el mismo proyecto y configuradas correctamente.
+* **Pedido.java:** representa un pedido realizado por un cliente. Guarda su identificador, cliente, detalles, estado, repartidor y observadores. También calcula el total sumando los subtotales de los productos.
 
-## 8. División sugerida para el trabajo en GitHub
+* **DetallePedido.java:** representa cada producto que hace parte de un pedido junto con su cantidad. Calcula el subtotal multiplicando el precio por la cantidad.
 
-- **Rama `menu`:** clases de productos, menú y estrategias de descuento.
-- **Rama `cliente`:** cliente, repartidor y gestores de ambos.
-- **Rama `pedido`:** pedido, detalles, estados, observadores, estadísticas y `Main.java`.
+* **EstadoPedido.java:** es un `enum` que contiene los estados permitidos de un pedido: CREADO, EN_PREPARACION, LISTO, EN_CAMINO, ENTREGADO y CANCELADO.
 
-Antes de fusionar las ramas, acuerden las firmas de los constructores y métodos públicos, y comprueben juntos que el proyecto compile. Cada integrante debe realizar commits de su propio trabajo y luego abrir un Pull Request.
+* **GestorPedidos.java:** administra los pedidos. Permite agregarlos, listarlos, buscarlos por ID y ordenarlos según su total.
 
-## 9. Limitaciones conocidas de esta versión
+* **EstadisticasPedidos.java:** realiza cálculos sobre los pedidos, como sumar las ventas y contar cuántos pedidos han sido entregados. Utiliza Streams de Java.
 
-Esta versión es una base educativa. Aún se puede mejorar para cubrir todos los requisitos del trabajo:
+* **ObservadorPedido.java:** interfaz que define el método que deben implementar las clases que reciben notificaciones.
 
-1. `GestorClientes`, `GestorRepartidores` y `GestorPedidos` almacenan en listas; si se necesita búsqueda promedio O(1), deben migrarse a `HashMap`.
-2. `GestorClientes` todavía no evita documentos duplicados; el modelo actual tampoco incluye el documento como atributo.
-3. Los descuentos están implementados, pero todavía no están conectados al cálculo de `Pedido`. Para que el total use una promoción, hay que integrar una estrategia de descuento en el pedido o en un servicio de cálculo.
-4. Las estadísticas actuales suman ventas y cuentan pedidos entregados; se pueden ampliar para obtener los tres platos más vendidos, ingresos por sucursal y el pedido más costoso por cliente.
-5. Los métodos de construcción podrían validar explícitamente argumentos `null` y entradas inválidas en todos los modelos.
+* **ObservadorCliente.java:** implementa ObservadorPedido y muestra una notificación dirigida al cliente cuando cambia el estado de un pedido.
 
-Estas mejoras deben añadirse de forma coordinada para que las tres ramas mantengan una interfaz compatible.
+* **ObservadorCocina.java:** implementa ObservadorPedido y muestra una notificación para cocina.
+
+* **ObservadorRepartidor.java:** implementa ObservadorPedido y muestra una notificación para el repartidor.
+
+* **Main.java:** es el punto de entrada del programa. Se utiliza para crear objetos de ejemplo, agregar productos a un pedido, calcular su total y cambiar su estado para comprobar las notificaciones.
+
+### ¿Por qué EstadoPedido es un enum?
+
+Porque un pedido solamente puede tener ciertos estados definidos.
+
+Utilizar un `enum` evita tener que escribir los estados como cadenas de texto y reduce los errores al asignarlos.
+
+### ¿Por qué utilizamos ObservadorPedido?
+
+Porque necesitamos que diferentes partes del sistema reciban notificaciones cuando cambia el estado de un pedido.
+
+En lugar de hacer que Pedido dependa directamente de las clases Cliente, Cocina o Repartidor para notificar, utilizamos una interfaz común.
+
+Esto corresponde al patrón de diseño **Observer**, que permite registrar observadores y notificarlos cuando ocurre un cambio.
+
+También facilita agregar otros observadores sin modificar toda la lógica del pedido.
+
+### ¿Por qué separamos Pedido y DetallePedido?
+
+Porque un pedido puede contener varios productos y cada producto puede tener una cantidad diferente.
+
+`DetallePedido` se encarga de guardar el producto, su cantidad y calcular su subtotal.
+
+`Pedido` se encarga de reunir esos detalles y calcular el total.
+
+Así evitamos que una sola clase tenga demasiadas responsabilidades.
+
+### ¿Por qué utilizamos Streams?
+
+Porque nos permiten trabajar con las colecciones de una forma más sencilla.
+
+Utilizamos operaciones como:
+
+* `stream()` para trabajar con los elementos de una colección.
+* `filter()` para filtrar elementos.
+* `mapToDouble()` para convertir valores a números decimales.
+* `sum()` para sumar valores.
+* `sorted()` para ordenar elementos.
+
+Estas operaciones permiten realizar cálculos y ordenamientos sin escribir todos los ciclos manualmente.
+
+## 6. Conceptos que vimos en POO utilizados
+
+* **Encapsulamiento:** los atributos de las clases son privados y se accede a ellos mediante métodos públicos.
+
+* **Herencia:** Plato, Bebida y Combo heredan de Producto para reutilizar sus atributos y métodos.
+
+* **Abstracción:** Producto es una clase abstracta que representa las características comunes de los productos.
+
+* **Polimorfismo:** podemos trabajar con objetos de Plato, Bebida y Combo utilizando el tipo Producto. También ocurre con las diferentes implementaciones de las interfaces.
+
+* **Interfaces:** EstrategiaDescuento y ObservadorPedido definen métodos que otras clases deben implementar.
+
+* **Colecciones:** utilizamos List y ArrayList para almacenar productos, clientes, repartidores, pedidos y detalles.
+
+* **Optional:** permite representar resultados que pueden no existir.
+
+* **Enum:** define los posibles estados de un pedido.
+
+* **Streams y Comparator:** permiten realizar cálculos, filtros y ordenamientos sobre las colecciones.
+
+* **Separación de responsabilidades:** cada clase se encarga de una parte específica del funcionamiento del programa.
+
+## 7. División del trabajo en GitHub
+
+El proyecto se dividió en tres ramas:
+
+* **Rama menu:** contiene las clases de productos, menú y estrategias de descuento.
+
+* **Rama cliente:** contiene las clases Cliente, Repartidor y los gestores correspondientes.
+
+* **Rama pedido:** contiene las clases relacionadas con los pedidos, detalles, estados, observadores, estadísticas y Main.
+
+Cada integrante trabaja en su rama y realiza sus propios commits.
+
+Cuando terminemos las partes individuales, se integran mediante Pull Requests y verificamos que las clases sean compatibles y que el proyecto compile correctamente.
+
+## 8. Limitaciones y mejoras pendientes
+
+Aunque el proyecto tiene una estructura funcional, todavía hay algunas cosas que podemos mejorar:
+
+* **Búsquedas por ID:** actualmente los gestores utilizan listas. Si necesitamos búsquedas promedio O(1), podemos reemplazarlas por `HashMap`.
+
+* **Clientes duplicados:** todavía falta agregar el documento de identificación y validar que no se registren clientes con el mismo documento, solo que no notamos excepciones.
+
+* **Descuentos:** las estrategias ya están implementadas, pero todavía falta integrarlas al cálculo del total de los pedidos.
+
+* **Estadísticas:** actualmente se calculan las ventas totales y la cantidad de pedidos entregados. Se pueden agregar estadísticas como los tres platos más vendidos, ingresos por sucursal y el pedido más costoso de cada cliente.
+
+* **Validaciones:** se pueden mejorar las comprobaciones de valores `null` y otros datos inválidos en las clases.
+
+Este es todo el trabajo, gracias por el tiempo extra y feliz día profe.
